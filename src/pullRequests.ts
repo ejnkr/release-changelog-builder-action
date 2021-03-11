@@ -11,6 +11,7 @@ export interface PullRequestInfo {
   mergeCommitSha: string
   author: string
   repoName: string
+  branchName: string
   labels: string[]
   milestone: string
   body: string
@@ -41,6 +42,7 @@ export class PullRequests {
         mergeCommitSha: pr.data.merge_commit_sha || '',
         author: pr.data.user?.login || '',
         repoName: pr.data.base.repo.full_name,
+        branchName: pr.data.head.ref,
         labels:
           pr.data.labels?.map(function (label) {
             return label.name || ''
@@ -94,6 +96,7 @@ export class PullRequests {
           mergeCommitSha: pr.merge_commit_sha || '',
           author: pr.user?.login || '',
           repoName: pr.base.repo.full_name,
+          branchName: pr.head.ref,
           labels:
             pr.labels?.map(function (label) {
               return label.name || ''
