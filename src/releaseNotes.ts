@@ -5,6 +5,7 @@ import {buildChangelog} from './transform'
 import * as core from '@actions/core'
 import {Configuration, DefaultConfiguration} from './configuration'
 import {failOrError} from './utils'
+import matchAll from 'match-all'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
@@ -38,6 +39,28 @@ export class ReleaseNotes {
       core.warning(`⚠️ No pull requests found`)
       return null
     }
+
+    core.startGroup('📑 Extract Jira issue keys')
+    const regex = /((([A-Z]+)|([0-9]+))+-\d+)/g
+    const branchNameList = mergedPullRequests.map(pr => pr.branchName)
+    const resultArr: string[] = []
+
+    // eslint-disable-next-line github/array-foreach
+    branchNameList.forEach(branch => {
+      const matches = matchAll(branch, regex).toArray()
+      // eslint-disable-next-line github/array-foreach
+      matches.forEach((match: string) => {
+        if (resultArr.find((element: string) => element !== match)) {
+          resultArr.push(match)
+        }
+      })
+    })
+
+    const jiraKeys = resultArr.join(',')
+
+    core.info(`️⚠️ Extract jira keys: ${JSON.stringify(jiraKeys)}`)
+    core.setOutput('jiraKey', jiraKeys)
+    core.endGroup()
 
     core.startGroup('📦 Build changelog')
     const resultChangelog = buildChangelog(
@@ -161,6 +184,7 @@ export class ReleaseNotes {
         mergeCommitSha: '',
         author: commit.author || '',
         repoName: '',
+        branchName: '',
         labels: [],
         milestone: '',
         body: commit.message || '',
