@@ -441,6 +441,7 @@ class PullRequests {
                     mergeCommitSha: pr.data.merge_commit_sha || '',
                     author: ((_a = pr.data.user) === null || _a === void 0 ? void 0 : _a.login) || '',
                     repoName: pr.data.base.repo.full_name,
+                    branchName: pr.data.head.ref,
                     labels: ((_b = pr.data.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
                         return label.name || '';
                     })) || [],
@@ -486,6 +487,7 @@ class PullRequests {
                             mergeCommitSha: pr.merge_commit_sha || '',
                             author: ((_b = pr.user) === null || _b === void 0 ? void 0 : _b.login) || '',
                             repoName: pr.base.repo.full_name,
+                            branchName: pr.head.ref,
                             labels: ((_c = pr.labels) === null || _c === void 0 ? void 0 : _c.map(function (label) {
                                 return label.name || '';
                             })) || [],
@@ -504,7 +506,7 @@ class PullRequests {
                         (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
                         mergedPRs.length >= maxPullRequests) {
                         if (mergedPRs.length >= maxPullRequests) {
-                            core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
                         return sortPullRequests(mergedPRs, true);
@@ -586,6 +588,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReleaseNotes = void 0;
 const commits_1 = __nccwpck_require__(3916);
@@ -594,6 +599,7 @@ const transform_1 = __nccwpck_require__(1644);
 const core = __importStar(__nccwpck_require__(2186));
 const configuration_1 = __nccwpck_require__(5527);
 const utils_1 = __nccwpck_require__(918);
+const match_all_1 = __importDefault(__nccwpck_require__(6816));
 class ReleaseNotes {
     constructor(octokit, options) {
         this.octokit = octokit;
@@ -618,6 +624,24 @@ class ReleaseNotes {
                 core.warning(`⚠️ No pull requests found`);
                 return null;
             }
+            core.startGroup('📑 Extract Jira issue keys');
+            const regex = /((([A-Z]+)|([0-9]+))+-\d+)/g;
+            const branchNameList = mergedPullRequests.map(pr => pr.branchName);
+            const resultArr = [];
+            // eslint-disable-next-line github/array-foreach
+            branchNameList.forEach(branch => {
+                const matches = match_all_1.default(branch, regex).toArray();
+                // eslint-disable-next-line github/array-foreach
+                matches.forEach((match) => {
+                    if (resultArr.find((element) => element !== match)) {
+                        resultArr.push(match);
+                    }
+                });
+            });
+            const jiraKeys = resultArr.join(',');
+            core.info(`️⚠️ Extract jira keys: ${JSON.stringify(jiraKeys)}`);
+            core.setOutput('jiraKey', jiraKeys);
+            core.endGroup();
             core.startGroup('📦 Build changelog');
             const resultChangelog = transform_1.buildChangelog(mergedPullRequests, configuration, this.options);
             core.endGroup();
@@ -698,6 +722,7 @@ class ReleaseNotes {
                     mergeCommitSha: '',
                     author: commit.author || '',
                     repoName: '',
+                    branchName: '',
                     labels: [],
                     milestone: '',
                     body: commit.message || '',
@@ -1192,6 +1217,7 @@ function fillTemplate(pr, template) {
     let transformed = template;
     transformed = transformed.replace('${{NUMBER}}', pr.number.toString());
     transformed = transformed.replace('${{TITLE}}', pr.title);
+    transformed = transformed.replace('${{BRANCH_NAME}}', pr.branchName);
     transformed = transformed.replace('${{URL}}', pr.htmlURL);
     transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString());
     transformed = transformed.replace('${{AUTHOR}}', pr.author);
@@ -5774,7 +5800,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.13.2";
+const VERSION = "4.13.5";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -6100,7 +6126,7 @@ var pluginRequestLog = __nccwpck_require__(8883);
 var pluginPaginateRest = __nccwpck_require__(4193);
 var pluginRestEndpointMethods = __nccwpck_require__(3044);
 
-const VERSION = "18.3.2";
+const VERSION = "18.3.5";
 
 const Octokit = core.Octokit.plugin(pluginRequestLog.requestLog, pluginRestEndpointMethods.restEndpointMethods, pluginPaginateRest.paginateRest).defaults({
   userAgent: `octokit-rest.js/${VERSION}`
@@ -6702,6 +6728,105 @@ const forEachStep = (self, fn, node, thisp) => {
 
 module.exports = LRUCache
 
+
+/***/ }),
+
+/***/ 6816:
+/***/ ((module) => {
+
+"use strict";
+
+
+/**
+ * matchAll
+ * Get all the matches for a regular expression in a string.
+ *
+ * @name matchAll
+ * @function
+ * @param {String} s The input string.
+ * @param {RegExp} r The regular expression.
+ * @return {Object} An object containing the following fields:
+ *
+ *  - `input` (String): The input string.
+ *  - `regex` (RegExp): The regular expression.
+ *  - `next` (Function): Get the next match.
+ *  - `toArray` (Function): Get all the matches.
+ *  - `reset` (Function): Reset the index.
+ */
+module.exports = function matchAll(s, r) {
+    return {
+        input: s,
+        regex: r
+
+        /**
+         * next
+         * Get the next match in single group match.
+         *
+         * @name next
+         * @function
+         * @return {String|null} The matched snippet.
+         */
+        , next: function next() {
+            var c = this.nextRaw();
+            if (c) {
+                for (var i = 1; i < c.length; i++) {
+                    if (c[i]) {
+                        return c[i];
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
+         * nextRaw
+         * Get the next match in raw regex output. Usefull to get another group match.
+         *
+         * @name nextRaw
+         * @function
+         * @returns {Array|null} The matched snippet
+         */
+        ,
+        nextRaw: function nextRaw() {
+            var c = this.regex.exec(this.input);
+            return c;
+        }
+
+        /**
+         * toArray
+         * Get all the matches.
+         *
+         * @name toArray
+         * @function
+         * @return {Array} The matched snippets.
+         */
+        ,
+        toArray: function toArray() {
+            var res = [],
+                c = null;
+
+            while (c = this.next()) {
+                res.push(c);
+            }
+
+            return res;
+        }
+
+        /**
+         * reset
+         * Reset the index.
+         *
+         * @name reset
+         * @function
+         * @param {Number} i The new index (default: `0`).
+         * @return {Number} The new index.
+         */
+        ,
+        reset: function reset(i) {
+            return this.regex.lastIndex = i || 0;
+        }
+    };
+};
 
 /***/ }),
 
