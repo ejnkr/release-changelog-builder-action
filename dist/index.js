@@ -625,12 +625,14 @@ class ReleaseNotes {
                 return null;
             }
             core.startGroup('📑 Extract Jira issue keys');
-            const regex = /((([A-Z]+)|([0-9]+))+-\d+)/g;
+            const regex = /((([a-zA-Z]+)|([0-9]+))+-\d+)/g;
             const branchNameList = mergedPullRequests.map(pr => pr.branchName);
             const resultArr = [];
+            core.info(`branchNameList: ${JSON.stringify(branchNameList)}`);
             // eslint-disable-next-line github/array-foreach
             branchNameList.forEach(branch => {
                 const matches = match_all_1.default(branch, regex).toArray();
+                core.info(`matches: ${JSON.stringify(matches)}`);
                 // eslint-disable-next-line github/array-foreach
                 matches.forEach((match) => {
                     if (resultArr.find((element) => element !== match)) {
@@ -638,6 +640,7 @@ class ReleaseNotes {
                     }
                 });
             });
+            core.info(`resultArr: ${JSON.stringify(resultArr)}`);
             const jiraKeys = resultArr.join(',');
             core.info(`️⚠️ Extract jira keys: ${JSON.stringify(jiraKeys)}`);
             core.setOutput('jiraKey', jiraKeys);

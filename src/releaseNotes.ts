@@ -41,13 +41,18 @@ export class ReleaseNotes {
     }
 
     core.startGroup('📑 Extract Jira issue keys')
-    const regex = /((([A-Z]+)|([0-9]+))+-\d+)/g
+    const regex = /((([a-zA-Z]+)|([0-9]+))+-\d+)/g
     const branchNameList = mergedPullRequests.map(pr => pr.branchName)
     const resultArr: string[] = []
+
+    core.info(`branchNameList: ${JSON.stringify(branchNameList)}`)
 
     // eslint-disable-next-line github/array-foreach
     branchNameList.forEach(branch => {
       const matches = matchAll(branch, regex).toArray()
+
+      core.info(`matches: ${JSON.stringify(matches)}`)
+
       // eslint-disable-next-line github/array-foreach
       matches.forEach((match: string) => {
         if (resultArr.find((element: string) => element !== match)) {
@@ -56,6 +61,7 @@ export class ReleaseNotes {
       })
     })
 
+    core.info(`resultArr: ${JSON.stringify(resultArr)}`)
     const jiraKeys = resultArr.join(',')
 
     core.info(`️⚠️ Extract jira keys: ${JSON.stringify(jiraKeys)}`)
