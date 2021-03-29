@@ -45,23 +45,20 @@ export class ReleaseNotes {
     const branchNameList = mergedPullRequests.map(pr => pr.branchName)
     const resultArr: string[] = []
 
-    core.info(`branchNameList: ${JSON.stringify(branchNameList)}`)
-
     // eslint-disable-next-line github/array-foreach
     branchNameList.forEach(branch => {
       const matches = matchAll(branch, regex).toArray()
 
-      core.info(`matches: ${JSON.stringify(matches)}`)
-
       // eslint-disable-next-line github/array-foreach
       matches.forEach((match: string) => {
-        if (resultArr.find((element: string) => element !== match)) {
+        // eslint-disable-next-line no-empty
+        if (resultArr.find((element: string) => element === match)) {
+        } else {
           resultArr.push(match)
         }
       })
     })
 
-    core.info(`resultArr: ${JSON.stringify(resultArr)}`)
     const jiraKeys = resultArr.join(',')
 
     core.info(`️⚠️ Extract jira keys: ${JSON.stringify(jiraKeys)}`)
