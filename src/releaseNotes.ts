@@ -62,7 +62,7 @@ export class ReleaseNotes {
     const jiraKeys = resultArr.join(',')
 
     core.info(`️⚠️ Extract jira keys: ${JSON.stringify(jiraKeys)}`)
-    core.setOutput('jiraKey', jiraKeys)
+    core.setOutput('jiraKeys', jiraKeys)
     core.endGroup()
 
     core.startGroup('📦 Build changelog')
