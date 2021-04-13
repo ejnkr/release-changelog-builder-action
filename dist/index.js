@@ -625,7 +625,7 @@ class ReleaseNotes {
                 return null;
             }
             core.startGroup('📑 Extract Jira issue keys');
-            const regex = /((([a-zA-Z]+)|([0-9]+))+-\d+)/g;
+            const regex = /(([a-zA-Z]+)+-\d+)/g;
             const branchNameList = mergedPullRequests.map(pr => pr.branchName);
             const resultArr = [];
             // eslint-disable-next-line github/array-foreach
